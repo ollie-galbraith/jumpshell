@@ -83,26 +83,26 @@ The first run of `JumpShell` will create the default configuration file automati
 
 ### Configuration File Options
 
-| Option                                       | Description                                                                             | Options          | Default                                      |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------- | -------------------------------------------- |
-| `configuration`                              | Global configuration settings for JumpShell.                                            |                  |                                              |
-| `configuration.password_list`                | The ID of the password list in PasswordState to use for storing/retrieving credentials. | `int`            | Will create a new list if not specified      |
-| `configuration.global_ssh_keypair_id`        | The Password State ID of the global SSH keypair to use.                                 | `int`            | Will generate a new keypair if not specified |
-| `configuration.seperate_ssh_key_pairs`       | Will generate separate SSH key pairs for each host.                                     | `bool`           | `false`                                      |
-| `configuration.use_password_state`           | Whether to use PasswordState for credential management.                                 | `bool`           | `true`                                       |
-| `configuration.credentials:`                 | Credential settings for JumpShell.                                                      | `list[dict]`     |                                              |
-| `configuration.credentials.username`         | The username for the saved credentials.                                                 | `string`         | `$env:USERNAME`                              |
-| `configuration.credentials.password_id`      | The ID of the password in PasswordState.                                                | `int`            |                                              |
-| `configuration.menu_options:`                | Menu settings for JumpShell.                                                            | `dict`           |                                              |
-| `configuration.menu_options.title_color`     | The color of the menu title.                                                            | `string\|list`   | `cyan`                                       |
-| `configuration.menu_options.columns`         | The number of columns in the menu.                                                      | `int`            | `6`                                          |
-| `configuration.menu_options.clear_screen`    | Whether to clear the screen before displaying the menu.                                 | `bool`           | `false`                                      |
-| `configuration.menu_options.border_color`    | The color of the menu border.                                                           | `string\|list`   | `@(5, 72, 112)`                              |
-| `configuration.menu_options.selection_color` | The color of the selected menu item.                                                    | `string\|list`   | `red`                                        |
-| `connections`                                | List of saved remote hosts with metadata.                                               | `list[dict]`     |                                              |
-| `connections.<hostname>`                     | Configuration for a specific remote host.                                               | `dict`           |                                              |
-| `connections.<hostname>.operating_system`    | The operating system of the remote host.                                                | `Windows\|Linux` |                                              |
-| `connections.<hostname>.public_key_set`      | A list of usernames where the public key authentication is set up for this host.        | `list[string]`   |                                              |
+| Option                                       | Description                                                                             | Options         | Default                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------------- | --------------- | -------------------------------------------- |
+| `configuration`                              | Global configuration settings for JumpShell.                                            |                 |                                              |
+| `configuration.password_list`                | The ID of the password list in PasswordState to use for storing/retrieving credentials. | `int`           | Will create a new list if not specified      |
+| `configuration.global_ssh_keypair_id`        | The Password State ID of the global SSH keypair to use.                                 | `int`           | Will generate a new keypair if not specified |
+| `configuration.seperate_ssh_key_pairs`       | Will generate separate SSH key pairs for each host.                                     | `bool`          | `false`                                      |
+| `configuration.use_password_state`           | Whether to use PasswordState for credential management.                                 | `bool`          | `true`                                       |
+| `configuration.credentials:`                 | Credential settings for JumpShell.                                                      | `list[dict]`    |                                              |
+| `configuration.credentials.username`         | The username for the saved credentials.                                                 | `string`        | `$env:USERNAME`                              |
+| `configuration.credentials.password_id`      | The ID of the password in PasswordState.                                                | `int`           |                                              |
+| `configuration.menu_options:`                | Menu settings for JumpShell.                                                            | `dict`          |                                              |
+| `configuration.menu_options.title_color`     | The color of the menu title.                                                            | `string|list`   | `cyan`                                       |
+| `configuration.menu_options.columns`         | The number of columns in the menu.                                                      | `int`           | `6`                                          |
+| `configuration.menu_options.clear_screen`    | Whether to clear the screen before displaying the menu.                                 | `bool`          | `false`                                      |
+| `configuration.menu_options.border_color`    | The color of the menu border.                                                           | `string|list`   | `@(5, 72, 112)`                              |
+| `configuration.menu_options.selection_color` | The color of the selected menu item.                                                    | `string|list`   | `red`                                        |
+| `connections`                                | List of saved remote hosts with metadata.                                               | `list[dict]`    |                                              |
+| `connections.<hostname>`                     | Configuration for a specific remote host.                                               | `dict`          |                                              |
+| `connections.<hostname>.operating_system`    | The operating system of the remote host.                                                | `Windows|Linux` |                                              |
+| `connections.<hostname>.public_key_set`      | A list of usernames where the public key authentication is set up for this host.        | `list[string]`  |                                              |
 
 ## Notes
 
