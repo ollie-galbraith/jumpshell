@@ -49,6 +49,7 @@ Function Import-RemoteConnectionConfig
 
         [void]$AvailableConnections.Add("Enter hostname")
         [void]$AvailableConnections.Add("Remove hostname")
+        [void]$AvailableConnections.Add("Open config file")
         
         $AvailableUsers = [System.Collections.Generic.List[object]]::New(@($Configuration.configuration.credentials.username))
         $AvailableUsers.Sort()
@@ -358,7 +359,8 @@ Function Show-RemoteConnectionMenu
 
         $ExtraOptions = @(
             "Enter hostname",
-            "Remove hostname"
+            "Remove hostname",
+            "Open config file"
         )
         
         $SelectedComputer = Show-GridMenu -Items ($Script:AvailableConnections | ForEach-Object{ If($ExtraOptions -contains $_){ $_ } Else { $_.ToUpper() }}) -Title 'Machine List' @Script:MenuParameters
@@ -371,9 +373,17 @@ Function Show-RemoteConnectionMenu
                         $SelectedComputer = Read-Host "Enter hostname"
                         Move-Cursor -Up ($MoveCursorUp + 1)
                         Clear-Console -ToScreenEnd
-                        $OperatingSystem = Show-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" @Script:MenuParameters
 
-                        New-RemoteConnection -Hostname $SelectedComputer -OperatingSystem $OperatingSystem
+                        If($Script:AvailableConnections -contains $SelectedComputer)
+                            {
+                                $OperatingSystem = $Script:Config.connections.$SelectedComputer.operating_system
+                                Move-Cursor -Down 2
+                            }
+                        Else
+                            {
+                                $OperatingSystem = Show-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" @Script:MenuParameters
+                                New-RemoteConnection -Hostname $SelectedComputer -OperatingSystem $OperatingSystem
+                            }
                     }
                 "Remove hostname"
                     {
@@ -386,6 +396,20 @@ Function Show-RemoteConnectionMenu
                             }
 
                         Remove-RemoteConnection -Hostname $SelectedComputer
+                        Continue RemoteConnectionLoop
+                    }
+                "Open config file"
+                    {
+                        Try
+                            {
+                                $Editor = Get-Command code -ErrorAction Stop | Select-Object -ExpandProperty Source
+                            }
+                        Catch
+                            {
+                                $Editor = Get-Command notepad | Select-Object -ExpandProperty Source
+                            }
+                        
+                        Invoke-Expression ". '$Editor' $($Script:Path )"
                         Continue RemoteConnectionLoop
                     }
                 Default
@@ -446,7 +470,10 @@ $LinuxConnectionTypes = @(
 
 $MoveCursorUp = 2
 
-Import-Module LTF-PasswordState -MinimumVersion 1.0.7.2
+If(!(Get-Command -Module LTF-PasswordState))
+    {
+        Import-Module LTF-PasswordState -MinimumVersion 1.0.7.2
+    }
 
 Initialize-ConfigurationFile
 Import-RemoteConnectionConfig
