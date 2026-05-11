@@ -70,6 +70,10 @@ The first run of `JumpShell` will create the default configuration file automati
 - Connect to a Windows host with WinRM.
 - Connect to a Linux host with SSH.
 - Open a remote Linux host in VS Code using the Remote SSH extension.
+- View and manage saved hosts and credentials in the configuration file.
+- Automatically generate and manage SSH key pairs with PasswordState integration.
+- Customise menu appearance and behaviour through configuration options.
+- Set customised terminal colors for each host. (Currently has to be set manually in the config file)
 
 ### Screenshots
 
@@ -83,31 +87,36 @@ The first run of `JumpShell` will create the default configuration file automati
 
 ### Configuration File Options
 
-| Option                                       | Description                                                                             | Options         | Default                                      |
-| -------------------------------------------- | --------------------------------------------------------------------------------------- | --------------- | -------------------------------------------- |
-| `configuration`                              | Global configuration settings for JumpShell.                                            |                 |                                              |
-| `configuration.password_list`                | The ID of the password list in PasswordState to use for storing/retrieving credentials. | `int`           | Will create a new list if not specified      |
-| `configuration.global_ssh_keypair_id`        | The Password State ID of the global SSH keypair to use.                                 | `int`           | Will generate a new keypair if not specified |
-| `configuration.seperate_ssh_key_pairs`       | Will generate separate SSH key pairs for each host.                                     | `bool`          | `false`                                      |
-| `configuration.use_password_state`           | Whether to use PasswordState for credential management.                                 | `bool`          | `true`                                       |
-| `configuration.credentials:`                 | Credential settings for JumpShell.                                                      | `list[dict]`    |                                              |
-| `configuration.credentials.username`         | The username for the saved credentials.                                                 | `string`        | `$env:USERNAME`                              |
-| `configuration.credentials.password_id`      | The ID of the password in PasswordState.                                                | `int`           |                                              |
-| `configuration.menu_options:`                | Menu settings for JumpShell.                                                            | `dict`          |                                              |
-| `configuration.menu_options.title_color`     | The color of the menu title.                                                            | `string|list`   | `cyan`                                       |
-| `configuration.menu_options.columns`         | The number of columns in the menu.                                                      | `int`           | `6`                                          |
-| `configuration.menu_options.clear_screen`    | Whether to clear the screen before displaying the menu.                                 | `bool`          | `false`                                      |
-| `configuration.menu_options.border_color`    | The color of the menu border.                                                           | `string|list`   | `@(5, 72, 112)`                              |
-| `configuration.menu_options.selection_color` | The color of the selected menu item.                                                    | `string|list`   | `red`                                        |
-| `connections`                                | List of saved remote hosts with metadata.                                               | `list[dict]`    |                                              |
-| `connections.<hostname>`                     | Configuration for a specific remote host.                                               | `dict`          |                                              |
-| `connections.<hostname>.operating_system`    | The operating system of the remote host.                                                | `Windows|Linux` |                                              |
-| `connections.<hostname>.public_key_set`      | A list of usernames where the public key authentication is set up for this host.        | `list[string]`  |                                              |
+| Option                                             | Description                                                                             | Options         | Default                                      |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------- | -------------------------------------------- |
+| `configuration`                                    | Global configuration settings for JumpShell.                                            |                 |                                              |
+| `configuration.password_list`                      | The ID of the password list in PasswordState to use for storing/retrieving credentials. | `int`           | Will create a new list if not specified      |
+| `configuration.global_ssh_keypair_id`              | The Password State ID of the global SSH keypair to use.                                 | `int`           | Will generate a new keypair if not specified |
+| `configuration.seperate_ssh_key_pairs`             | Will generate separate SSH key pairs for each host.                                     | `bool`          | `false`                                      |
+| `configuration.use_password_state`                 | Whether to use PasswordState for credential management.                                 | `bool`          | `true`                                       |
+| `configuration.credentials:`                       | Credential settings for JumpShell.                                                      | `list[dict]`    |                                              |
+| `configuration.credentials.username`               | The username for the saved credentials.                                                 | `string`        | `$env:USERNAME`                              |
+| `configuration.credentials.password_id`            | The ID of the password in PasswordState.                                                | `int`           |                                              |
+| `configuration.menu_options:`                      | Menu settings for JumpShell.                                                            | `dict`          |                                              |
+| `configuration.menu_options.title_color`           | The color of the menu title.                                                            | `string|list`   | `cyan`                                       |
+| `configuration.menu_options.columns`               | The number of columns in the menu.                                                      | `int`           | `6`                                          |
+| `configuration.menu_options.clear_screen`          | Whether to clear the screen before displaying the menu.                                 | `bool`          | `false`                                      |
+| `configuration.menu_options.border_color`          | The color of the menu border.                                                           | `string|list`   | `@(5, 72, 112)`                              |
+| `configuration.menu_options.selection_color`       | The color of the selected menu item.                                                    | `string|list`   | `red`                                        |
+| `connections`                                      | List of saved remote hosts with metadata.                                               | `list[dict]`    |                                              |
+| `connections.<hostname>`                           | Configuration for a specific remote host.                                               | `dict`          |                                              |
+| `connections.<hostname>.operating_system`          | The operating system of the remote host.                                                | `Windows|Linux` |                                              |
+| `connections.<hostname>.public_key_set`            | A list of usernames where the public key authentication is set up for this host.        | `list[string]`  |                                              |
+| `connections.<hostname>.terminal_color`            | Controls various terminal color settings for this host.                                 | `dict`          |                                              |
+| `connections.<hostname>.terminal_color.background` | The background color of the terminal for this host.                                     | `string`        | Needs to be a valid hex color code.          |
+
+---
 
 ## Notes
 
 - The Windows Terminal profile is configured to launch PowerShell without loading the standard profile and then dot-source the JumpShell script.
 - If the `JumpShell` profile already exists in Windows Terminal, setup will not duplicate it.
+- When exiting from a WinRM session, the menu will not be displayed again due to how WinRM sessions are launched. You can relaunch the menu either by running the `Start-JumpShell` function or by opening a new `JumpShell` terminal.
 
 ## Troubleshooting
 

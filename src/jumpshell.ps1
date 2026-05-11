@@ -458,6 +458,31 @@ Function Show-RemoteConnectionMenu
         Return $ConnectionOptions
     }
 
+Function Add-BashRCFile
+    {
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory=$true)]
+            [string]$FileName,
+            [Parameter(Mandatory=$true)]
+            [string]$Content,
+            [Parameter(Mandatory=$true)]
+            [string[]]$SSHOptions,
+            [Parameter(Mandatory=$true)]
+            [string]$SSHConnectionString
+        )
+
+        $Content | ssh $SSHOptions $SSHConnectionString "mkdir -p ~/.bashrc.d && cat > ~/.bashrc.d/$FileName"
+    }
+
+Function Start-JumpShell
+    {
+        [CmdletBinding()]
+        param()
+
+        & {. $PSScriptRoot\jumpshell.ps1}
+    }
+
 $AllowedOperatingSystems = @(
     'Linux',
     'Windows'
@@ -468,11 +493,31 @@ $LinuxConnectionTypes = @(
     'VSCode'
 )
 
+$SSHBackgroundColorRC = @'
+#!/usr/bin/env bash
+
+# Sets the background colour of the terminal
+if [[ $- == *i* ]] && [[ -n "$SSH_CONNECTION" ]]; then
+# $- == *i* indicates that an interactive shell
+        if [[ "${WT_BG_COLOR:-}" =~ ^#[0-9A-Fa-f]{6}$ ]]; then
+        # Ensures WT_BG_COLOR is a valid hexcode
+                printf '\e]11;%s\a' "$WT_BG_COLOR"
+                trap 'printf "\e]111\a"' EXIT
+                # Will reset the terminal colours on exit
+        fi
+fi
+'@
+
 $MoveCursorUp = 2
 
 If(!(Get-Command -Module LTF-PasswordState))
     {
         Import-Module LTF-PasswordState -MinimumVersion 1.0.7.2
+    }
+
+If(!(Get-Command -Module ConsoleFX))
+    {
+        Import-Module ConsoleFX
     }
 
 Initialize-ConfigurationFile
@@ -594,7 +639,19 @@ $Script:MenuParameters = @{
                                         Move-Cursor -HomePosition
                                         Clear-Console -ToScreenEnd
 
-                                        ssh $SSHOptions $ConnectionString
+                                        $ColouredTerminal = ''
+                                        If($Script:Config.connections.$($ConnectionOptions.Hostname).Keys -contains 'terminal_color')
+                                            {
+                                                If($Script:Config.connections.$($ConnectionOptions.Hostname).terminal_color.Keys -contains 'background')
+                                                    {
+                                                        Add-BashRCFile -FileName 'background_color' -Content $SSHBackgroundColorRC -SSHOptions $SSHOptions -SSHConnectionString $ConnectionString
+
+                                                        $ColouredTerminal = 'export WT_BG_COLOR="{0}"; exec "$SHELL" -l' -f $Script:Config.connections.$($ConnectionOptions.Hostname).terminal_color.background
+                                                        $SSHOptions += @('-tt')
+                                                    }
+                                            }
+
+                                        ssh $SSHOptions $ConnectionString $ColouredTerminal
                                     }
                                 'VSCode'
                                     {

@@ -2,7 +2,7 @@
     "altGrAliasing": true,
     "antialiasingMode": "grayscale",
     "closeOnExit": "automatic",
-    "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -NoExit -Command \"& { . $env:APPDATA\\JumpShelljumpshell.ps1'}\"",
+    "commandline": "%SystemRoot%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NoProfile -NoExit -Command \". $env:APPDATA\\JumpShell\\jumpshell.ps1\"",
     "cursorShape": "bar",
     "experimental.retroTerminalEffect": false,
     "guid": "{1900c993-8521-4815-8f04-69586299c86a}",
