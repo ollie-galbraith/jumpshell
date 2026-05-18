@@ -472,7 +472,7 @@ Function Add-BashRCFile
             [string]$SSHConnectionString
         )
 
-        $Content | ssh $SSHOptions $SSHConnectionString "mkdir -p ~/.bashrc.d && cat > ~/.bashrc.d/$FileName"
+        $Content | ssh $SSHOptions $SSHConnectionString "mkdir -p ~/.bashrc.d && cat > ~/.bashrc.d/$FileName && sed -i 's/\r$//' ~/.bashrc.d/$FileName"
     }
 
 Function Start-JumpShell
