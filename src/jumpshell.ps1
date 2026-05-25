@@ -98,10 +98,10 @@ Function Initialize-ConfigurationFile
                 usernames              = @()
                 menu_options = @{
                     columns         = 6
-                    clear_screen    = $false
-                    title_color     = 'cyan'
-                    selection_color = 'red'
-                    border_color    = @(5, 72, 115)
+                    title_color     = "'#15dbad'"
+                    selection_color = "'#ff0000'"
+                    border_color    = "'#054873'"
+                    text_color      = "'#808080'"
                 }
             }
             connections = @()
@@ -288,6 +288,8 @@ Function New-RemoteConnectionUser
             [Boolean]$SaveToPasswordState = $True
         )
 
+        $Username = Read-TextInput -Prompt "Enter username:" @TextInputParams
+
         Import-RemoteConnectionConfig
 
         If($Script:Config.configuration.credentials.Keys -contains $Username)
@@ -301,7 +303,7 @@ Function New-RemoteConnectionUser
 
         If(($Script:Config.configuration.use_password_state -eq $True) -and ($SaveToPasswordState -eq $True))
             {
-                $SecureString = Read-Host -Prompt "Enter $Username`s password" -AsSecureString
+                $SecureString = Read-TextInput -Prompt "Enter $Username`s password:" -AsSecureString @TextInputParams
                 $PasswordID = Add-PwdStatePassword -PasswordListID $Script:Config.configuration.password_list -Title $Username -Username $Username -Password $SecureString -Type Basic -UseDefaultCredentials | Select-Object -ExpandProperty PasswordID
 
                 $UserObject['password_id'] = $PasswordID
@@ -310,6 +312,8 @@ Function New-RemoteConnectionUser
         [void]$Script:Config.configuration.credentials.Add($UserObject)
 
         ConvertTo-Yaml $Script:Config @Script:YamlOutputParams
+
+        Return $Username
     }
 
 Function Remove-RemoteConnection
@@ -363,33 +367,36 @@ Function Show-RemoteConnectionMenu
             "Open config file"
         )
         
-        $SelectedComputer = Show-GridMenu -Items ($Script:AvailableConnections | ForEach-Object{ If($ExtraOptions -contains $_){ $_ } Else { $_.ToUpper() }}) -Title 'Machine List' @Script:MenuParameters
+        $MachineMenuParams = @{
+            Items    = ($Script:AvailableConnections | ForEach-Object{ If($ExtraOptions -contains $_){ $_ } Else { $_.ToUpper() }})
+            Title    = 'Machine List'
+            Columns  = $Script:Config.configuration.menu_options.columns
+            PassThru = $True
+        }
+
+        $MachineMenuResult = Select-GridMenu @MachineMenuParams @Script:MenuParameters
+        $SelectedComputer = $MachineMenuResult.Result
 
         Switch($SelectedComputer)
             {
                 {[String]::IsNullOrEmpty($_)} { Exit }
                 "Enter hostname"
                     {
-                        $SelectedComputer = Read-Host "Enter hostname"
-                        Move-Cursor -Up ($MoveCursorUp + 1)
-                        Clear-Console -ToScreenEnd
+                        $SelectedComputer = Read-TextInput -Prompt "Enter hostname" @TextInputParams
 
                         If($Script:AvailableConnections -contains $SelectedComputer)
                             {
                                 $OperatingSystem = $Script:Config.connections.$SelectedComputer.operating_system
-                                Move-Cursor -Down 2
                             }
                         Else
                             {
-                                $OperatingSystem = Show-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" @Script:MenuParameters
+                                $OperatingSystem = Select-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" -Columns $AllowedOperatingSystems.Count @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu
                                 New-RemoteConnection -Hostname $SelectedComputer -OperatingSystem $OperatingSystem
                             }
                     }
                 "Remove hostname"
                     {
-                        Move-Cursor -Up $MoveCursorUp
-                        Clear-Console -ToScreenEnd
-                        $SelectedComputer = Show-GridMenu -Items $Script:Config.connections.Keys -Title "Host to remove" @Script:MenuParameters
+                        $SelectedComputer = Select-GridMenu -Items $Script:Config.connections.Keys -Title "Host to remove" -Columns $Script:Config.configuration.menu_options.columns @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu
                         If([String]::IsNullOrEmpty($SelectedComputer))
                             {
                                 Return $null
@@ -423,9 +430,16 @@ Function Show-RemoteConnectionMenu
                 Return $null
             }
 
-        Move-Cursor -Up $MoveCursorUp
-        Clear-Console -ToScreenEnd
-        $SelectedUser = Show-GridMenu -Items $Script:AvailableUsers -Title "Select User to connect to $SelectedComputer" @Script:MenuParameters
+        $UserMenuParams = @{
+            Items            = $Script:AvailableUsers
+            Title            = "Select User to connect to $SelectedComputer"
+            Columns          = $Script:AvailableUsers.Count
+            UnderlayGridMenu = $MachineMenuResult.Menu
+            PassThru         = $True
+        }
+
+        $Script:UserMenuResult = Select-GridMenu @UserMenuParams @Script:MenuParamsL2
+        $SelectedUser = $Script:UserMenuResult.Result
         Switch($SelectedUser)
             {
                 {[String]::IsNullOrEmpty($_)}
@@ -434,15 +448,11 @@ Function Show-RemoteConnectionMenu
                     }
                 "Enter username"
                     {
-                        $SelectedUser = Read-Host "Enter username"
-                        New-RemoteConnectionUser -Username $SelectedUser
+                        $SelectedUser = New-RemoteConnectionUser
                     }
                 "Remove username"
                     {
-                        Move-Cursor -Up $MoveCursorUp
-                        Clear-Console -ToScreenEnd
-                        $SelectedUser = Show-GridMenu -Items $Script:Config.configuration.credentials.username -Title "Username to remove" @Script:MenuParameters
-
+                        $SelectedUser = Select-GridMenu -Items $Script:Config.configuration.credentials.username -Title "Username to remove" @Script:MenuParamsL3 -UnderlayGridMenu $Script:UserMenuResult.Menu
                         Remove-RemoteConnectionUser -Username $SelectedUser
 
                         Continue RemoteConnectionLoop
@@ -508,8 +518,6 @@ if [[ $- == *i* ]] && [[ -n "$SSH_CONNECTION" ]]; then
 fi
 '@
 
-$MoveCursorUp = 2
-
 If(!(Get-Command -Module LTF-PasswordState))
     {
         Import-Module LTF-PasswordState -MinimumVersion 1.0.7.2
@@ -523,19 +531,49 @@ If(!(Get-Command -Module ConsoleFX))
 Initialize-ConfigurationFile
 Import-RemoteConnectionConfig
 
+$SelectionColor = $Script:Config.configuration.menu_options.selection_color
+$TitleColor     = $Script:Config.configuration.menu_options.title_color
+$BorderColor    = $Script:Config.configuration.menu_options.border_color
+$TextColor      = $Script:Config.configuration.menu_options.text_color
+If($SelectionColor -match '^#([0-9A-Fa-f]{6})$')
+    {
+        $SelectionColor = [ConsoleFX.ColorModel.Hex]::New($SelectionColor)
+    }
+If($TitleColor -match '^#([0-9A-Fa-f]{6})$')
+    {
+        $TitleColor = [ConsoleFX.ColorModel.Hex]::New($TitleColor)
+    }
+If($BorderColor -match '^#([0-9A-Fa-f]{6})$')
+    {
+        $BorderColor = [ConsoleFX.ColorModel.Hex]::New($BorderColor)
+    }
+If($TextColor -match '^#([0-9A-Fa-f]{6})$')
+    {
+        $TextColor = [ConsoleFX.ColorModel.Hex]::New($TextColor)
+    }
+
 $Script:MenuParameters = @{
-    Columns        = $Script:Config.configuration.menu_options.columns
-    ClearScreen    = $Script:Config.configuration.menu_options.clear_screen
-    TitleColor     = $Script:Config.configuration.menu_options.title_color
-    SelectionColor = $Script:Config.configuration.menu_options.selection_color
-    BorderColor    = $Script:Config.configuration.menu_options.border_color
+    SelectionColor = $SelectionColor
+    Border         = $true
+    TitleColor     = $TitleColor
+    BorderColor    = $BorderColor
+    TextColor      = $TextColor
 }
+
+$TextInputParams = @{
+    Border       = $true
+    FullWidth    = $true
+    PromptInline = $true
+}
+
+$Script:MenuParamsL2 = $Script:MenuParameters + @{ StartRow = 3; BorderInset = 3 }
+$Script:MenuParamsL3 = $Script:MenuParameters + @{ StartRow = 6; BorderInset = 6 }
+
 
 :RemoteConnectionLoop While($True)
     {
         $SelectedComputer = $null
-        Move-Cursor -HomePosition
-        Clear-Console -ToScreenEnd
+        Clear-Host
 
         Import-RemoteConnectionConfig
 
@@ -550,8 +588,7 @@ $Script:MenuParameters = @{
 
         If($null -eq $ConnectionOptions)
             {
-                Move-Cursor -HomePosition
-                Clear-Console -ToScreenEnd
+                Clear-Host
                 Continue RemoteConnectionLoop
             }
 
@@ -585,21 +622,17 @@ $Script:MenuParameters = @{
                                 [void]$WinRMParams.Add('Credential', $CredentialObj)
                             }
 
-                        Move-Cursor -HomePosition
-                        Clear-Console -ToScreenEnd
+                        Clear-Host
                         Enter-PSSession @WinRMParams
                         Break RemoteConnectionLoop
                     }
                 'Linux'
                     {
-                        Move-Cursor -Up $MoveCursorUp
-                        Clear-Console -ToScreenEnd
-                        $ConnectionType = Show-GridMenu -Items $LinuxConnectionTypes -Title "Connect to $($ConnectionOptions.Hostname)" @Script:MenuParameters -FullWidth:$False
+                        $ConnectionType = Select-GridMenu -Items $LinuxConnectionTypes -Title "Connect to $($ConnectionOptions.Hostname) via..." @Script:MenuParameters -Columns $LinuxConnectionTypes.Count -UnderLayGridMenu $Script:UserMenuResult.Menu -StartRow 6 -BorderInset 6
 
                         If([String]::IsNullOrEmpty($ConnectionType))
                             {
-                                Move-Cursor -HomePosition
-                                Clear-Console -ToScreenEnd
+                                Clear-Host
                                 Continue RemoteConnectionLoop
                             }
 
@@ -636,8 +669,7 @@ $Script:MenuParameters = @{
                                                 Start-Job -ScriptBlock {Start-Sleep -Seconds 3; Remove-Item $Using:PrivateKeyFile.FullName -Force} | Out-Null
                                             }
                                         
-                                        Move-Cursor -HomePosition
-                                        Clear-Console -ToScreenEnd
+                                        Clear-Host
 
                                         $ColouredTerminal = ''
                                         If($Script:Config.connections.$($ConnectionOptions.Hostname).Keys -contains 'terminal_color')
@@ -659,8 +691,7 @@ $Script:MenuParameters = @{
                                         
                                         If($VSCodeWorkspaces.Count -eq 0)
                                             {
-                                                Move-Cursor -HomePosition
-                                                Clear-Console -ToScreenEnd
+                                                Clear-Host
                                                 code --remote ssh-remote+$($ConnectionString.ToLower())
 
                                                 Continue RemoteConnectionLoop
@@ -675,14 +706,11 @@ $Script:MenuParameters = @{
 
                                         [void]$WorkspaceNames.Add("New Workspace")
 
-                                        Move-Cursor -Up $MoveCursorUp
-                                        Clear-Console -ToScreenEnd
-                                        $WorkspaceToConnect = Show-GridMenu -Items $WorkspaceNames -Title "Open Workspace" @Script:MenuParameters -FullWidth:$False
+                                        $WorkspaceToConnect = Select-GridMenu -Items $WorkspaceNames -Title "Open Workspace" @Script:MenuParameters -FullWidth:$false
 
                                         If([String]::IsNullOrEmpty($WorkspaceToConnect))
                                             {
-                                                Move-Cursor -HomePosition
-                                                Clear-Console -ToScreenEnd
+                                                Clear-Host
                                                 Continue RemoteConnectionLoop
                                             }
                                         If($WorkspaceToConnect -eq 'New Workspace')
@@ -695,8 +723,7 @@ $Script:MenuParameters = @{
                                                 $ExtraCodeArgs = "$WorkspacePath"
                                             }
 
-                                        Move-Cursor -HomePosition
-                                        Clear-Console -ToScreenEnd
+                                        Clear-Host
                                         code --remote ssh-remote+$($ConnectionString.ToLower()) $ExtraCodeArgs
                                     }
                             }

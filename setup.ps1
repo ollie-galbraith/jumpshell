@@ -16,8 +16,8 @@ Catch
     }
 
 Write-Host "Installing required modules..." -ForegroundColor Green
-Install-Module -Name powershell-yaml -Scope CurrentUser
-Install-Module -Name ConsoleFX -Scope CurrentUser -Repository $PSRepositoryName
+Install-Module -Name powershell-yaml -Scope CurrentUser -Repository PSGallery -Force
+Install-Module -Name ConsoleFX -Scope CurrentUser -Repository PSGallery -Force
 Install-Module -Name LTF-PasswordState -MinimumVersion 1.0.7.2 -Scope CurrentUser -Repository $PSRepositoryName
 
 Write-Host "Copying required files to location..." -ForegroundColor Green
