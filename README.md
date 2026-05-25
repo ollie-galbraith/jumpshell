@@ -112,6 +112,23 @@ The first run of `JumpShell` will create the default configuration file automati
 
 ---
 
+## Custom Terminal Colours
+You can set custom terminal colours for each host by adding a `terminal_color` section to the host configuration in the YAML file. For example:
+
+```yaml
+connections:
+  mylinuxhost:
+    operating_system: Linux
+    terminal_color:
+      background: '#1e1e1e'
+```
+
+### Example
+
+![Custom Terminal Colours](images/custom_colours.gif)
+
+---
+
 ## Notes
 
 - The Windows Terminal profile is configured to launch PowerShell without loading the standard profile and then dot-source the JumpShell script.
