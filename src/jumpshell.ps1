@@ -242,6 +242,7 @@ Function New-RemoteConnection
             }
         Catch
             {
+                [ConsoleFX.Cursor]::LineDown(4)
                 Write-Warning "Unable to ping $($Hostname). Continue connecting?"
                 $ContinueConnecting = Read-Host "Y/N"
 
@@ -271,10 +272,11 @@ Function New-RemoteConnection
                             }
 
                         $MachineObject.$Hostname['public_key_set'] = @()
-                    }           
+                    }
             }
 
         [void]$Script:Config.connections.Add($MachineObject)
+
         ConvertTo-Yaml $Script:Config @Script:YamlOutputParams
     }
 
@@ -390,13 +392,15 @@ Function Show-RemoteConnectionMenu
                             }
                         Else
                             {
-                                $OperatingSystem = Select-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" -Columns $AllowedOperatingSystems.Count @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu
+                                $OperatingSystem = Select-GridMenu -Items $AllowedOperatingSystems -Title "Enter the OS for $SelectedComputer" -Columns $AllowedOperatingSystems.Count @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu -PassThru
+                                $OperatingSystem = $OperatingSystem.Result
                                 New-RemoteConnection -Hostname $SelectedComputer -OperatingSystem $OperatingSystem
                             }
                     }
                 "Remove hostname"
                     {
-                        $SelectedComputer = Select-GridMenu -Items $Script:Config.connections.Keys -Title "Host to remove" -Columns $Script:Config.configuration.menu_options.columns @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu
+                        $SelectedComputer = Select-GridMenu -Items $Script:Config.connections.Keys -Title "Host to remove" -Columns $Script:Config.configuration.menu_options.columns @Script:MenuParamsL2 -UnderlayGridMenu $MachineMenuResult.Menu -PassThru
+                        $SelectedComputer = $SelectedComputer.Result
                         If([String]::IsNullOrEmpty($SelectedComputer))
                             {
                                 Return $null
@@ -452,8 +456,8 @@ Function Show-RemoteConnectionMenu
                     }
                 "Remove username"
                     {
-                        $SelectedUser = Select-GridMenu -Items $Script:Config.configuration.credentials.username -Title "Username to remove" @Script:MenuParamsL3 -UnderlayGridMenu $Script:UserMenuResult.Menu
-                        Remove-RemoteConnectionUser -Username $SelectedUser
+                        $SelectedUser = Select-GridMenu -Items $Script:Config.configuration.credentials.username -Title "Username to remove" @Script:MenuParamsL3 -UnderlayGridMenu $Script:UserMenuResult.Menu -PassThru
+                        Remove-RemoteConnectionUser -Username $SelectedUser.Result
 
                         Continue RemoteConnectionLoop
                     }
@@ -666,9 +670,9 @@ $Script:MenuParamsL3 = $Script:MenuParameters + @{ StartRow = 6; BorderInset = 6
                                                         ConvertTo-Yaml $Script:Config @Script:YamlOutputParams
                                                     }
 
-                                                Start-Job -ScriptBlock {Start-Sleep -Seconds 3; Remove-Item $Using:PrivateKeyFile.FullName -Force} | Out-Null
+                                                Start-Job -ScriptBlock {Start-Sleep -Seconds 10; Remove-Item $Using:PrivateKeyFile.FullName -Force} | Out-Null
                                             }
-                                        
+
                                         Clear-Host
 
                                         $ColouredTerminal = ''
