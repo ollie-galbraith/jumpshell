@@ -1,0 +1,78 @@
+name: Build Jumpshell
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/JumpShell/**'
+      - '.gitea/workflows/build.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/JumpShell/**'
+      - '.gitea/workflows/build.yml'
+
+jobs:
+  build:
+    name: Build JumpShell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Clear NuGet cache
+        run: dotnet nuget locals all --clear
+
+      - name: Restore dependencies
+        run: dotnet restore src/ConsoleFX/ConsoleFX.csproj
+
+      - name: Build
+        run: |
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true
+
+      - name: Configure git
+        run: |
+          git config --local user.email "gitea-actions@localhost"
+          git config --local user.name "Gitea Actions"
+
+      - name: Commit and push binaries
+        run: |
+          git add bin/linux-x64 bin/linux-arm64 bin/osx-x64 bin/osx-arm64 bin/win-x64
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update JumpShell binaries"
+            git push
+          fi
+        env:
+          GITEA_TOKEN: ${{ secrets.GIT_TOKEN }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: JumpShell-windows-release
+          path: src/JumpShell/bin/Release/
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create Release
+        id: use-go-action
+        uses: akkuman/gitea-release-action@v1
+        with:
+          files: |-
+            bin/**

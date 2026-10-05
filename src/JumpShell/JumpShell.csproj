@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>jumpshell</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishedExecutableExtension Condition="'$(RuntimeIdentifier)' == 'win-x64'">.exe</PublishedExecutableExtension>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+    <ProjectReference Include="../../../ConsoleFX/src/ConsoleFX/ConsoleFX.csproj" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(RuntimeIdentifier)' != ''">
+    <ItemGroup>
+      <FilesToCopy Include="$(TargetDir)$(AssemblyName)$(PublishedExecutableExtension)" />
+    </ItemGroup>
+
+    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)" />
+    <Copy
+      SourceFiles="@(FilesToCopy)"
+      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)/$(AssemblyName)$(PublishedExecutableExtension)"
+      SkipUnchangedFiles="true" />
+
+    <Message Text="Copied $(AssemblyName)$(PublishedExecutableExtension) to repository bin/$(RuntimeIdentifier)." Importance="high" />
+  </Target>
+
+  <Target Name="CopyPublishedExecutableToRepositoryBin" AfterTargets="Publish">
+    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)" />
+    <Copy
+      SourceFiles="$(PublishDir)$(AssemblyName)$(PublishedExecutableExtension)"
+      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)/$(AssemblyName)$(PublishedExecutableExtension)"
+      SkipUnchangedFiles="true" />
+    <Message Text="Published $(AssemblyName)$(PublishedExecutableExtension) to repository bin/$(RuntimeIdentifier)." Importance="high" />
+  </Target>
+</Project>

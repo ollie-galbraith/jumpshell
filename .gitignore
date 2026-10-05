@@ -48,3 +48,11 @@ Thumbs.db
 *.mov
 *.wmv
 
+# .NET build output
+/bin/
+/src/JumpShell/bin/
+/src/JumpShell/obj/
+
+
+# zsh_history file
+**/**/.zsh_history
