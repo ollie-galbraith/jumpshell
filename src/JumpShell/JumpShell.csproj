@@ -22,21 +22,21 @@
       <FilesToCopy Include="$(TargetDir)$(AssemblyName)$(PublishedExecutableExtension)" />
     </ItemGroup>
 
-    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin" />
     <Copy
       SourceFiles="@(FilesToCopy)"
-      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)/$(AssemblyName)$(PublishedExecutableExtension)"
+      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(AssemblyName)-$(RuntimeIdentifier)$(PublishedExecutableExtension)"
       SkipUnchangedFiles="true" />
 
-    <Message Text="Copied $(AssemblyName)$(PublishedExecutableExtension) to repository bin/$(RuntimeIdentifier)." Importance="high" />
+    <Message Text="Copied $(AssemblyName)-$(RuntimeIdentifier)$(PublishedExecutableExtension) to repository bin." Importance="high" />
   </Target>
 
   <Target Name="CopyPublishedExecutableToRepositoryBin" AfterTargets="Publish">
-    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)" />
+    <MakeDir Directories="$(MSBuildProjectDirectory)/../../bin" />
     <Copy
       SourceFiles="$(PublishDir)$(AssemblyName)$(PublishedExecutableExtension)"
-      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(RuntimeIdentifier)/$(AssemblyName)$(PublishedExecutableExtension)"
+      DestinationFiles="$(MSBuildProjectDirectory)/../../bin/$(AssemblyName)-$(RuntimeIdentifier)$(PublishedExecutableExtension)"
       SkipUnchangedFiles="true" />
-    <Message Text="Published $(AssemblyName)$(PublishedExecutableExtension) to repository bin/$(RuntimeIdentifier)." Importance="high" />
+    <Message Text="Published $(AssemblyName)-$(RuntimeIdentifier)$(PublishedExecutableExtension) to repository bin." Importance="high" />
   </Target>
 </Project>

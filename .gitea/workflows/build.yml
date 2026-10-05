@@ -48,7 +48,7 @@ jobs:
 
       - name: Commit and push binaries
         run: |
-          git add -f bin/linux-x64 bin/linux-arm64 bin/osx-x64 bin/osx-arm64 bin/win-x64
+          git add -A -f bin/
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
@@ -70,4 +70,4 @@ jobs:
         with:
           files: |-
             bin/**
-          tag_name: v1.0.0
+          tag_name: v1.0.1
