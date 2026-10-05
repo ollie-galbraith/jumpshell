@@ -31,7 +31,7 @@ jobs:
         run: dotnet nuget locals all --clear
 
       - name: Restore dependencies
-        run: dotnet restore src/ConsoleFX/ConsoleFX.csproj
+        run: dotnet restore src/JumpShell/JumpShell.csproj
 
       - name: Build
         run: |
@@ -48,7 +48,7 @@ jobs:
 
       - name: Commit and push binaries
         run: |
-          git add bin/linux-x64 bin/linux-arm64 bin/osx-x64 bin/osx-arm64 bin/win-x64
+          git add -f bin/linux-x64 bin/linux-arm64 bin/osx-x64 bin/osx-arm64 bin/win-x64
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
@@ -64,15 +64,10 @@ jobs:
           name: JumpShell-windows-release
           path: src/JumpShell/bin/Release/
 
-  release:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
       - name: Create Release
         id: use-go-action
         uses: akkuman/gitea-release-action@v1
         with:
           files: |-
             bin/**
+          tag_name: v1.0.0
