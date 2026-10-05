@@ -58,11 +58,11 @@ jobs:
         env:
           GITEA_TOKEN: ${{ secrets.GIT_TOKEN }}
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: JumpShell-windows-release
-          path: src/JumpShell/bin/Release/
+      # - name: Upload artifacts
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: JumpShell-windows-release
+      #     path: src/JumpShell/bin/Release/
 
       - name: Create Release
         id: use-go-action
