@@ -16,6 +16,8 @@ dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-arm64 --self-c
 
 Each command writes its executable under `src/JumpShell/bin/Release/net10.0/<rid>/publish/` and copies it to the repository-root `bin/` directory using the runtime identifier in its filename, for example `bin/jumpshell-linux-x64`, `bin/jumpshell-osx-arm64`, and `bin/jumpshell-win-x64.exe`. OpenSSH must be available as `ssh`. The VS Code Remote SSH action additionally requires the `code` CLI and the Remote SSH extension.
 
+Set the application version in `JumpShell.csproj`. The release workflow uses it for the `v`-prefixed release tag, and the executable displays it in the main menu footer. Run `jumpshell --version` to print the version without opening the menu.
+
 JumpShell references the vendored `src/JumpShell/lib/ConsoleFX.dll`, so building this repository does not require the ConsoleFX source checkout. When ConsoleFX changes, rebuild its `net10.0` assembly and replace this DLL to carry those changes into JumpShell builds. `Newtonsoft.Json` is restored as a NuGet dependency of JumpShell.
 
 ## Configuration

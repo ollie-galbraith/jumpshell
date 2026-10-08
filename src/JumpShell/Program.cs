@@ -17,8 +17,16 @@ internal static class Program
     private static readonly ConfigurationStore Store = new();
     private static AppConfiguration _configuration = new();
 
-    private static async Task Main()
+    private static readonly string Version = typeof(Program).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
+
+    private static async Task Main(string[] args)
     {
+        if (args.Length == 1 && args[0] == "--version")
+        {
+            Console.WriteLine($"Jumpshell v{Version}");
+            return;
+        }
+
         Console.CancelKeyPress += (_, _) => Console.Write(Screen.AlternativeBuffer.Reset);
         Console.Write(Screen.AlternativeBuffer.Enable);
         try
@@ -101,7 +109,7 @@ internal static class Program
         }
 
         const string title = "Hosts";
-        const string footerText = "? to show help   Esc to exit";
+        var footerText = $"? to show help   Esc to exit   v{Version}";
         var menu = CreateMenu(
             title,
             items,
