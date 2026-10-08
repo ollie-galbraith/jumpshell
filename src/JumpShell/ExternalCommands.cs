@@ -66,26 +66,38 @@ internal static class ExternalCommands
     public static async Task<int> ConnectSshAsync(string hostname, string username, HostConfiguration host)
     {
         var target = $"{username}@{hostname}";
+        var identityArguments = await GetIdentityArgumentsAsync(target, host);
         var background = host.TerminalColor?.Background;
         if (!string.IsNullOrWhiteSpace(background) && IsHexColor(background))
         {
-            var setup = await RunAsync("ssh", [target, "mkdir -p ~/.bashrc.d && cat > ~/.bashrc.d/background_color && sed -i 's/\\r$//' ~/.bashrc.d/background_color"], BackgroundColorScript);
+            var setupArguments = new List<string>(identityArguments);
+            setupArguments.AddRange([target, "mkdir -p ~/.bashrc.d && cat > ~/.bashrc.d/background_color && sed -i 's/\\r$//' ~/.bashrc.d/background_color"]);
+            var setup = await RunAsync("ssh", setupArguments, BackgroundColorScript);
             if (setup != 0)
             {
                 return setup;
             }
 
-            return await RunAsync("ssh", ["-tt", target, $"export WT_BG_COLOR='{background}'; exec \"$SHELL\" -l"]);
+            var connectionArguments = new List<string>(identityArguments);
+            connectionArguments.AddRange(["-tt", target, $"export WT_BG_COLOR='{background}'; exec \"$SHELL\" -l"]);
+            return await RunAsync("ssh", connectionArguments);
         }
 
-        return await RunAsync("ssh", [target]);
+        var arguments = new List<string>(identityArguments);
+        arguments.Add(target);
+        return await RunAsync("ssh", arguments);
     }
 
     public static Task<int> ConnectPowerShellRemotingAsync(string hostname, string username) =>
         RunAsync("pwsh", ["-NoLogo", "-NoExit", "-Command", $"Enter-PSSession -HostName '{EscapePowerShell(hostname)}' -UserName '{EscapePowerShell(username)}'"]);
 
-    public static Task<int> ConnectRemotePowerShellShellAsync(string hostname, string username) =>
-        RunAsync("ssh", ["-tt", $"{username}@{hostname}", "pwsh"]);
+    public static async Task<int> ConnectRemotePowerShellShellAsync(string hostname, string username, HostConfiguration host)
+    {
+        var target = $"{username}@{hostname}";
+        var arguments = await GetIdentityArgumentsAsync(target, host);
+        arguments.AddRange(["-tt", $"{username}@{hostname}", "pwsh"]);
+        return await RunAsync("ssh", arguments);
+    }
 
     public static Task<int> ClearKnownHostKeyAsync(string hostname) =>
         RunAsync("ssh-keygen", ["-R", hostname], suppressOutput: true);
@@ -139,6 +151,78 @@ internal static class ExternalCommands
 
     private static bool IsHexColor(string value) =>
         value.Length == 7 && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
+
+    private static async Task<List<string>> GetIdentityArgumentsAsync(string target, HostConfiguration host)
+    {
+        var arguments = new List<string>();
+        if (string.IsNullOrWhiteSpace(host.SshKey))
+        {
+            return arguments;
+        }
+
+        var selectedIdentity = ExpandIdentityPath(host.SshKey);
+        arguments.Add("-i");
+        arguments.Add(selectedIdentity);
+
+        var defaultIdentities = await GetConfiguredIdentityFilesAsync(target);
+        var pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        foreach (var identity in defaultIdentities.Select(ExpandIdentityPath).Where(identity => !pathComparer.Equals(identity, selectedIdentity)))
+        {
+            arguments.Add("-i");
+            arguments.Add(identity);
+        }
+
+        return arguments;
+    }
+
+    private static async Task<IReadOnlyList<string>> GetConfiguredIdentityFilesAsync(string target)
+    {
+        var startInfo = new ProcessStartInfo("ssh")
+        {
+            UseShellExecute = false,
+            RedirectStandardOutput = true
+        };
+        startInfo.ArgumentList.Add("-G");
+        startInfo.ArgumentList.Add(target);
+
+        using var process = new Process { StartInfo = startInfo };
+        try
+        {
+            process.Start();
+            var output = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+            if (process.ExitCode != 0)
+            {
+                return [];
+            }
+
+            return output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)
+                .Where(line => line.StartsWith("identityfile ", StringComparison.OrdinalIgnoreCase))
+                .Select(line => line["identityfile ".Length..].Trim())
+                .Where(path => !path.Equals("none", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        catch (Win32Exception)
+        {
+            return [];
+        }
+    }
+
+    private static string ExpandIdentityPath(string path)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (path == "~")
+        {
+            return home;
+        }
+
+        if (path.StartsWith("~/", StringComparison.Ordinal) || path.StartsWith("~\\", StringComparison.Ordinal))
+        {
+            return Path.Combine(home, path[2..]);
+        }
+
+        return Environment.ExpandEnvironmentVariables(path);
+    }
 
     private static string EscapePowerShell(string value) => value.Replace("'", "''", StringComparison.Ordinal);
 }

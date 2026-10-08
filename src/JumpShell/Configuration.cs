@@ -42,6 +42,7 @@ internal sealed class HostConfiguration
 {
     public string OperatingSystem { get; set; } = "Linux";
     public string? DefaultUser { get; set; }
+    public string? SshKey { get; set; }
     public List<string> AdditionalUsers { get; set; } = [];
     public string ConnectionMethod { get; set; } = "SSH";
     public string? WindowsConnectionMethod { get; set; }
@@ -181,6 +182,7 @@ internal sealed class ConfigurationStore
         {
             OperatingSystem = ReadString(node, "operating_system", "Linux"),
             DefaultUser = Scalar(Find(node, "default_user")),
+            SshKey = Scalar(Find(node, "ssh_key")),
             ConnectionMethod = Scalar(Find(node, "connection_method")) ?? "SSH",
             WindowsConnectionMethod = Scalar(Find(node, "windows_connection_method")),
             PasswordId = Scalar(Find(node, "password_id"))

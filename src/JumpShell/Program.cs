@@ -102,7 +102,7 @@ internal static class Program
     private static (string? Selection, MainMenuShortcut Shortcut, GridMenu? Underlay) SelectHost()
     {
         var items = _configuration.Connections.Keys.Order(StringComparer.OrdinalIgnoreCase)
-            .Select(host => host.ToUpperInvariant()).ToList();
+            .Select(host => host).ToList();
         if (items.Count == 0)
         {
             items.Add("No saved hosts");
@@ -256,6 +256,7 @@ internal static class Program
         }
 
         actions.Add("Clear saved SSH host key");
+        actions.Add("Set or clear SSH key");
         actions.Add("Add user for this connection");
         
         if (host.AdditionalUsers.Count > 0)
@@ -320,6 +321,9 @@ internal static class Program
                 case "Clear saved SSH host key":
                     await ClearKnownHostKeyAsync(hostname, underlay);
                     break;
+                case "Set or clear SSH key":
+                    SetSshKey(host);
+                    break;
                 default:
                     return;
             }
@@ -365,7 +369,7 @@ internal static class Program
             }
             else if (connectionMethod.Equals("ssh-shell", StringComparison.OrdinalIgnoreCase))
             {
-                var exitCode = await ExternalCommands.ConnectRemotePowerShellShellAsync(hostname, username);
+                var exitCode = await ExternalCommands.ConnectRemotePowerShellShellAsync(hostname, username, host);
                 if (exitCode != 0)
                 {
                     ShowMessage($"SSH session to {hostname} exited with code {exitCode}.", clearScreen: false);
@@ -556,6 +560,14 @@ internal static class Program
             host.ConnectionMethod = method;
             Store.Save(_configuration);
         }
+    }
+
+    private static void SetSshKey(HostConfiguration host)
+    {
+        var currentKey = host.SshKey ?? "not set";
+        var path = ReadText($"SSH private key path (blank clears; current: {currentKey}):").Trim();
+        host.SshKey = string.IsNullOrWhiteSpace(path) ? null : path;
+        Store.Save(_configuration);
     }
 
     private static void RemoveConnectionUser(HostConfiguration host)

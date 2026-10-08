@@ -46,6 +46,7 @@ connections:
   my-linux-host:
     operating_system: Linux
     default_user: admin
+    ssh_key: ~/.ssh/id_ed25519_work
     additional_users:
       - backup
     connection_method: SSH
@@ -60,7 +61,9 @@ connections:
 
 The loader accepts host entries in either map form, as shown above, or the legacy sequence-of-single-host-maps form. Saving writes the map form. It also reads existing `configuration.credentials` usernames and preserves their PasswordState IDs and related legacy settings.
 
-Each connection can set `default_user`, `additional_users`, and `connection_method` (`SSH` or `VSCode`). Global `configuration.usernames` remain available to every host; `additional_users` are local to that connection. A configured `default_user` is used directly without showing the user picker. Without a default, a single assigned user is also used automatically; multiple assigned users show the picker. Connections without a configured method default to SSH; use `c` > “Set connection method” or set `connection_method: VSCode` in YAML to make VS Code the default for a host. Press `c` while a host is highlighted to open its single-column, layered connection menu, where you can connect, manage users/defaults, or open the config file.
+Each connection can set `default_user`, `ssh_key`, `additional_users`, and `connection_method` (`SSH` or `VSCode`). Use “Set or clear SSH key” in the connection menu to save a private-key path as `ssh_key`; leave the path blank to clear it. Direct SSH connections pass this key with `-i` and leave OpenSSH's normal identity and agent behavior enabled, so its other configured keys remain available if the selected key is rejected. This per-connection option applies to direct SSH and Windows `ssh-shell` connections. VS Code Remote SSH and PowerShell remoting use their own SSH configuration paths and do not receive this per-launch key option.
+
+Global `configuration.usernames` remain available to every host; `additional_users` are local to that connection. A configured `default_user` is used directly without showing the user picker. Without a default, a single assigned user is also used automatically; multiple assigned users show the picker. Connections without a configured method default to SSH; use `c` > “Set connection method” or set `connection_method: VSCode` in YAML to make VS Code the default for a host. Press `c` while a host is highlighted to open its single-column, layered connection menu, where you can connect, manage users/defaults, or open the config file.
 
 The connection menu also has “Clear saved SSH host key”. After confirmation, JumpShell runs `ssh-keygen -R <hostname>` to remove that host's entry from the user's OpenSSH `known_hosts` file. The next SSH connection will verify and save the host key again.
 
