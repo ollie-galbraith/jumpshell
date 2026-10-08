@@ -61,6 +61,7 @@ internal sealed class ConfigurationStore
 {
     private readonly ISerializer _serializer = new SerializerBuilder()
         .WithNamingConvention(UnderscoredNamingConvention.Instance)
+        .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull | DefaultValuesHandling.OmitEmptyCollections)
         .Build();
 
     public string Path { get; }
@@ -95,8 +96,8 @@ internal sealed class ConfigurationStore
         if (configNode is not null)
         {
             result.Configuration.UsePasswordState = ReadBool(configNode, "use_password_state");
-            result.Configuration.PasswordList = Scalar(Find(configNode, "password_list"));
-            result.Configuration.GlobalSshKeypairId = Scalar(Find(configNode, "global_ssh_keypair_id"));
+            result.Configuration.PasswordList = OptionalScalar(Find(configNode, "password_list"));
+            result.Configuration.GlobalSshKeypairId = OptionalScalar(Find(configNode, "global_ssh_keypair_id"));
             result.Configuration.SeparateSshKeyPairs = ReadBool(configNode, "seperate_ssh_key_pairs") || ReadBool(configNode, "separate_ssh_key_pairs");
             result.Configuration.WindowsConnectionMethod = ReadString(configNode, "windows_connection_method", "ssh-shell");
             result.Configuration.MenuOptions.Columns = ReadInt(configNode, "menu_options", "columns", 6);
@@ -124,7 +125,7 @@ internal sealed class ConfigurationStore
                         result.Configuration.Credentials.Add(new UserConfiguration
                         {
                             Username = username,
-                            PasswordId = Scalar(Find(credential, "password_id"))
+                            PasswordId = OptionalScalar(Find(credential, "password_id"))
                         });
                     }
                 }
@@ -182,12 +183,12 @@ internal sealed class ConfigurationStore
         var host = new HostConfiguration
         {
             OperatingSystem = ReadString(node, "operating_system", "Linux"),
-            DefaultUser = Scalar(Find(node, "default_user")),
-            Alias = Scalar(Find(node, "alias")),
-            SshKey = Scalar(Find(node, "ssh_key")),
-            ConnectionMethod = Scalar(Find(node, "connection_method")) ?? "SSH",
-            WindowsConnectionMethod = Scalar(Find(node, "windows_connection_method")),
-            PasswordId = Scalar(Find(node, "password_id"))
+            DefaultUser = OptionalScalar(Find(node, "default_user")),
+            Alias = OptionalScalar(Find(node, "alias")),
+            SshKey = OptionalScalar(Find(node, "ssh_key")),
+            ConnectionMethod = OptionalScalar(Find(node, "connection_method")) ?? "SSH",
+            WindowsConnectionMethod = OptionalScalar(Find(node, "windows_connection_method")),
+            PasswordId = OptionalScalar(Find(node, "password_id"))
         };
 
         if (Find(node, "additional_users") is YamlSequenceNode additionalUsers)
@@ -198,10 +199,8 @@ internal sealed class ConfigurationStore
         }
 
         var terminalColor = Find(node, "terminal_color") as YamlMappingNode;
-        host.TerminalColor = terminalColor is null ? null : new TerminalColorConfiguration
-        {
-            Background = Scalar(Find(terminalColor, "background"))
-        };
+        var background = OptionalScalar(Find(terminalColor, "background"));
+        host.TerminalColor = background is null ? null : new TerminalColorConfiguration { Background = background };
 
         if (Find(node, "public_key_set") is YamlSequenceNode publicKeySet)
         {
@@ -216,6 +215,9 @@ internal sealed class ConfigurationStore
         node?.Children.FirstOrDefault(pair => string.Equals(Scalar(pair.Key), key, StringComparison.OrdinalIgnoreCase)).Value;
 
     private static string? Scalar(YamlNode? node) => (node as YamlScalarNode)?.Value;
+
+    private static string? OptionalScalar(YamlNode? node) =>
+        Scalar(node) is { Length: > 0 } value ? value : null;
 
     private static string ReadString(YamlMappingNode node, string key, string fallback) =>
         Scalar(Find(node, key)) is { Length: > 0 } value ? value : fallback;
