@@ -4,7 +4,7 @@ This project builds a cross-platform JumpShell console executable using the exis
 
 ## Build and publish
 
-The executable targets .NET 10. Publish a self-contained, single-file binary for each target platform:
+The executable targets .NET 10. Publish a self-contained, compressed single-file binary for each target platform. Compression reduces download size at the cost of some startup time:
 
 ```sh
 dotnet publish src/JumpShell/JumpShell.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
