@@ -170,24 +170,37 @@ internal static class Program
             return;
         }
 
+        string? alias = null;
+        var pingFailed = false;
         try
         {
             using var ping = new Ping();
             var reply = ping.Send(hostname, 2000);
-            if (reply.Status != IPStatus.Success && !Confirm($"Unable to ping {hostname}. Continue connecting?"))
-            {
-                return;
-            }
+            pingFailed = reply.Status != IPStatus.Success;
         }
         catch (PingException)
         {
-            if (!Confirm($"Unable to ping {hostname}. Continue connecting?"))
+            pingFailed = true;
+        }
+
+        if (pingFailed)
+        {
+            if (Confirm($"Unable to ping {hostname}. Add an alias?"))
+            {
+                alias = ReadText("Enter alias hostname or IP address:").Trim();
+            }
+
+            if (string.IsNullOrWhiteSpace(alias) && !Confirm($"Unable to ping {hostname}. Continue connecting?"))
             {
                 return;
             }
         }
 
-        _configuration.Connections[hostname] = new HostConfiguration { OperatingSystem = operatingSystem };
+        _configuration.Connections[hostname] = new HostConfiguration
+        {
+            OperatingSystem = operatingSystem,
+            Alias = string.IsNullOrWhiteSpace(alias) ? null : alias
+        };
         Store.Save(_configuration);
     }
 
@@ -256,6 +269,7 @@ internal static class Program
         }
 
         actions.Add("Clear saved SSH host key");
+        actions.Add("Set or clear alias");
         actions.Add("Set or clear SSH key");
         actions.Add("Add user for this connection");
         
@@ -324,6 +338,9 @@ internal static class Program
                 case "Set or clear SSH key":
                     SetSshKey(host);
                     break;
+                case "Set or clear alias":
+                    SetAlias(host);
+                    break;
                 default:
                     return;
             }
@@ -347,12 +364,14 @@ internal static class Program
             return;
         }
 
-        await ExternalCommands.ClearKnownHostKeyAsync(hostname);
+        var host = _configuration.Connections[hostname];
+        await ExternalCommands.ClearKnownHostKeyAsync(GetConnectionTarget(hostname, host));
     }
 
     private static async Task ConnectAsync(string hostname, string? methodOverride = null)
     {
         var host = _configuration.Connections[hostname];
+        var connectionTarget = GetConnectionTarget(hostname, host);
         var username = SelectUser(hostname, host);
         if (username is null)
         {
@@ -365,11 +384,11 @@ internal static class Program
             var connectionMethod = host.WindowsConnectionMethod ?? _configuration.Configuration.WindowsConnectionMethod;
             if (connectionMethod.Equals("powershell-remoting", StringComparison.OrdinalIgnoreCase))
             {
-                await ExternalCommands.ConnectPowerShellRemotingAsync(hostname, username);
+                await ExternalCommands.ConnectPowerShellRemotingAsync(connectionTarget, username);
             }
             else if (connectionMethod.Equals("ssh-shell", StringComparison.OrdinalIgnoreCase))
             {
-                var exitCode = await ExternalCommands.ConnectRemotePowerShellShellAsync(hostname, username, host);
+                var exitCode = await ExternalCommands.ConnectRemotePowerShellShellAsync(connectionTarget, username, host);
                 if (exitCode != 0)
                 {
                     ShowMessage($"SSH session to {hostname} exited with code {exitCode}.", clearScreen: false);
@@ -410,7 +429,7 @@ internal static class Program
             }
 
             Console.Clear();
-            var exitCode = await ExternalCommands.ConnectSshAsync(hostname, username, host);
+            var exitCode = await ExternalCommands.ConnectSshAsync(connectionTarget, username, host);
             if (exitCode != 0)
             {
                 ShowMessage($"SSH session to {hostname} exited with code {exitCode}.", clearScreen: false);
@@ -418,7 +437,7 @@ internal static class Program
             return;
         }
 
-        await OpenVsCodeAsync(hostname, username);
+        await OpenVsCodeAsync(hostname, connectionTarget, username);
     }
 
     private static string? SelectUser(string hostname, HostConfiguration host)
@@ -570,6 +589,14 @@ internal static class Program
         Store.Save(_configuration);
     }
 
+    private static void SetAlias(HostConfiguration host)
+    {
+        var currentAlias = host.Alias ?? "not set";
+        var alias = ReadText($"Connection alias (blank clears; current: {currentAlias}):").Trim();
+        host.Alias = string.IsNullOrWhiteSpace(alias) ? null : alias;
+        Store.Save(_configuration);
+    }
+
     private static void RemoveConnectionUser(HostConfiguration host)
     {
         var username = SelectMenu(
@@ -614,26 +641,29 @@ internal static class Program
         Store.Save(_configuration);
     }
 
-    private static async Task OpenVsCodeAsync(string hostname, string username)
+    private static async Task OpenVsCodeAsync(string hostname, string connectionTarget, string username)
     {
-        var workspaces = ExternalCommands.FindVsCodeWorkspaces(hostname);
+        var workspaces = ExternalCommands.FindVsCodeWorkspaces(connectionTarget);
         if (workspaces.Count == 0)
         {
-            await ExternalCommands.OpenVsCodeAsync(hostname.ToLowerInvariant(), username.ToLowerInvariant());
+            await ExternalCommands.OpenVsCodeAsync(connectionTarget.ToLowerInvariant(), username.ToLowerInvariant());
             return;
         }
 
         var items = workspaces.Select(workspace => workspace.Name).ToList();
         items.Add("New Workspace");
-        var selected = SelectMenu("Open Workspace", items, Math.Max(1, items.Count));
+        var selected = SelectMenu($"Open Workspace on {hostname}", items, Math.Max(1, items.Count));
         if (selected is null)
         {
             return;
         }
 
         var workspace = workspaces.FirstOrDefault(item => item.Name == selected);
-        await ExternalCommands.OpenVsCodeAsync(hostname.ToLowerInvariant(), username.ToLowerInvariant(), workspace?.Path);
+        await ExternalCommands.OpenVsCodeAsync(connectionTarget.ToLowerInvariant(), username.ToLowerInvariant(), workspace?.Path);
     }
+
+    private static string GetConnectionTarget(string hostname, HostConfiguration host) =>
+        string.IsNullOrWhiteSpace(host.Alias) ? hostname : host.Alias;
 
     private static async Task OpenConfigAsync()
     {
