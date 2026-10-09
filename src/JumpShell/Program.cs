@@ -584,9 +584,77 @@ internal static class Program
     private static void SetSshKey(HostConfiguration host)
     {
         var currentKey = host.SshKey ?? "not set";
-        var path = ReadText($"SSH private key path (blank clears; current: {currentKey}):").Trim();
+        var path = ReadText(
+            $"SSH private key path (blank clears; current: {currentKey}):",
+            tabCompletionOptionsHandler: CompleteSshKeyPaths).Trim();
         host.SshKey = string.IsNullOrWhiteSpace(path) ? null : path;
         Store.Save(_configuration);
+    }
+
+    private static IReadOnlyList<TextInputCompletionOption> CompleteSshKeyPaths(string input)
+    {
+        if (input.Length == 0)
+        {
+            return [new TextInputCompletionOption("~/.ssh/", "~/.ssh/")];
+        }
+
+        if (input == "~")
+        {
+            return [new TextInputCompletionOption("~/", "~/")];
+        }
+
+        var value = input;
+        var expandedPath = value;
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (expandedPath.StartsWith("~/", StringComparison.Ordinal) || expandedPath.StartsWith("~\\", StringComparison.Ordinal))
+        {
+            expandedPath = Path.Combine(home, expandedPath[2..]);
+        }
+        expandedPath = Environment.ExpandEnvironmentVariables(expandedPath);
+
+        var separatorIndex = expandedPath.LastIndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
+        var directory = separatorIndex < 0
+            ? "."
+            : separatorIndex == 0 || (OperatingSystem.IsWindows() && separatorIndex == 2 && expandedPath[1] == ':')
+                ? expandedPath[..(separatorIndex + 1)]
+                : expandedPath[..separatorIndex];
+        var filePrefix = expandedPath[(separatorIndex + 1)..];
+        var typedSeparatorIndex = value.LastIndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
+        var typedDirectory = typedSeparatorIndex < 0 ? "" : value[..(typedSeparatorIndex + 1)];
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        try
+        {
+            var matches = Directory.EnumerateFileSystemEntries(directory)
+                .Where(path => (Path.GetFileName(path) ?? "").StartsWith(filePrefix, comparison))
+                .OrderBy(path => Path.GetFileName(path), StringComparer.OrdinalIgnoreCase)
+                .ThenBy(path => Path.GetFileName(path), StringComparer.Ordinal)
+                .ToList();
+            if (matches.Count == 0)
+            {
+                return [];
+            }
+
+            return matches.Select(path =>
+            {
+                var name = Path.GetFileName(path) ?? "";
+                var isDirectory = Directory.Exists(path);
+                var suffix = isDirectory ? Path.DirectorySeparatorChar.ToString() : "";
+                return new TextInputCompletionOption(typedDirectory + name + suffix, name + suffix);
+            }).ToList();
+        }
+        catch (IOException)
+        {
+            return [];
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return [];
+        }
+        catch (ArgumentException)
+        {
+            return [];
+        }
     }
 
     private static void SetAlias(HostConfiguration host)
@@ -743,7 +811,8 @@ internal static class Program
         GridMenu? underlay = null,
         int startRow = 0,
         int borderInset = 0,
-        int padding = 1)
+        int padding = 1,
+        Func<string, IReadOnlyList<TextInputCompletionOption>>? tabCompletionOptionsHandler = null)
     {
         var input = new TextInput(
             prompt,
@@ -754,7 +823,8 @@ internal static class Program
             borderInset: borderInset,
             promptInline: true)
         {
-            UnderlayMenu = underlay
+            UnderlayMenu = underlay,
+            TabCompletionOptionsHandler = tabCompletionOptionsHandler
         };
         input.SetColor(
             promptColor: ToAnsiColor(_configuration.Configuration.MenuOptions.TitleColor, Foreground.Cyan),
