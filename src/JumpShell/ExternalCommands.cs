@@ -19,15 +19,15 @@ internal static class ExternalCommands
     public static async Task<int> RunAsync(
         string fileName,
         IEnumerable<string> arguments,
-        string? standardInput = null,
-        bool suppressOutput = false)
+        string? standardInput  = null,
+        bool    suppressOutput = false)
     {
         var startInfo = new ProcessStartInfo(fileName)
         {
-            UseShellExecute = false,
-            RedirectStandardInput = standardInput is not null,
+            UseShellExecute        = false,
+            RedirectStandardInput  = standardInput is not null,
             RedirectStandardOutput = suppressOutput,
-            RedirectStandardError = suppressOutput
+            RedirectStandardError  = suppressOutput
         };
         foreach (var argument in arguments)
         {
@@ -65,9 +65,9 @@ internal static class ExternalCommands
 
     public static async Task<int> ConnectSshAsync(string hostname, string username, HostConfiguration host)
     {
-        var target = $"{username}@{hostname}";
+        var target            = $"{username}@{hostname}";
         var identityArguments = await GetIdentityArgumentsAsync(target, host);
-        var background = host.TerminalColor?.Background;
+        var background        = host.TerminalColor?.Background;
         if (!string.IsNullOrWhiteSpace(background) && IsHexColor(background))
         {
             var setupArguments = new List<string>(identityArguments);
@@ -93,7 +93,7 @@ internal static class ExternalCommands
 
     public static async Task<int> ConnectRemotePowerShellShellAsync(string hostname, string username, HostConfiguration host)
     {
-        var target = $"{username}@{hostname}";
+        var target    = $"{username}@{hostname}";
         var arguments = await GetIdentityArgumentsAsync(target, host);
         arguments.AddRange(["-tt", $"{username}@{hostname}", "pwsh"]);
         return await RunAsync("ssh", arguments);
@@ -136,10 +136,10 @@ internal static class ExternalCommands
                 continue;
             }
 
-            var uri = property.Name;
+            var uri       = property.Name;
             var hostIndex = uri.IndexOf(hostname, StringComparison.OrdinalIgnoreCase);
-            var path = Uri.UnescapeDataString(uri[(hostIndex + hostname.Length)..]);
-            var name = path.TrimEnd('/', '\\').Split('/', '\\').LastOrDefault();
+            var path      = Uri.UnescapeDataString(uri[(hostIndex + hostname.Length)..]);
+            var name      = path.TrimEnd('/', '\\').Split('/', '\\').LastOrDefault();
             if (!string.IsNullOrWhiteSpace(name))
             {
                 results.Add(new RemoteWorkspace(name, path));
@@ -165,7 +165,7 @@ internal static class ExternalCommands
         arguments.Add(selectedIdentity);
 
         var defaultIdentities = await GetConfiguredIdentityFilesAsync(target);
-        var pathComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var pathComparer      = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         foreach (var identity in defaultIdentities.Select(ExpandIdentityPath).Where(identity => !pathComparer.Equals(identity, selectedIdentity)))
         {
             arguments.Add("-i");

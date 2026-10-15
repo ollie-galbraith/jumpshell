@@ -109,7 +109,7 @@ internal static class Program
         }
 
         const string title = "Hosts";
-        var footerText = $"? to show help   Esc to exit   v{Version}";
+        var footerText = $"? to show help | Esc to exit | v{Version}";
         var menu = CreateMenu(
             title,
             items,
@@ -613,15 +613,15 @@ internal static class Program
         expandedPath = Environment.ExpandEnvironmentVariables(expandedPath);
 
         var separatorIndex = expandedPath.LastIndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
-        var directory = separatorIndex < 0
+        var directory      = separatorIndex < 0
             ? "."
             : separatorIndex == 0 || (OperatingSystem.IsWindows() && separatorIndex == 2 && expandedPath[1] == ':')
                 ? expandedPath[..(separatorIndex + 1)]
                 : expandedPath[..separatorIndex];
-        var filePrefix = expandedPath[(separatorIndex + 1)..];
+        var filePrefix          = expandedPath[(separatorIndex + 1)..];
         var typedSeparatorIndex = value.LastIndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]);
-        var typedDirectory = typedSeparatorIndex < 0 ? "" : value[..(typedSeparatorIndex + 1)];
-        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        var typedDirectory      = typedSeparatorIndex < 0 ? "" : value[..(typedSeparatorIndex + 1)];
+        var comparison          = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
         try
         {
@@ -757,13 +757,13 @@ internal static class Program
         string title,
         List<string> items,
         int columns,
-        GridMenu? underlay = null,
-        string? selectedItem = null,
-        int startRow = 0,
-        int borderInset = 0,
-        bool isDimmed = false,
-        int padding = 1,
-        string? footerText = null)
+        GridMenu? underlay     = null,
+        string?   selectedItem = null,
+        int       startRow     = 0,
+        int       borderInset  = 0,
+        bool      isDimmed     = false,
+        int       padding      = 1,
+        string?   footerText   = null)
     {
         var options = CreateMenu(title, items, columns, underlay, selectedItem, startRow, borderInset, isDimmed, padding, footerText);
         var selection = options.Run();
@@ -774,24 +774,24 @@ internal static class Program
         string title,
         List<string> items,
         int columns,
-        GridMenu? underlay = null,
-        string? selectedItem = null,
-        int startRow = 0,
-        int borderInset = 0,
-        bool isDimmed = false,
-        int padding = 1,
-        string? footerText = null)
+        GridMenu? underlay     = null,
+        string?   selectedItem = null,
+        int       startRow     = 0,
+        int       borderInset  = 0,
+        bool      isDimmed     = false,
+        int       padding      = 1,
+        string?   footerText   = null)
     {
         var options = new GridMenu(
             items,
-            columns: columns,
-            padding: padding,
-            fullWidth: true,
-            border: true,
-            title: title,
-            startRow: startRow,
+            columns    : columns,
+            padding    : padding,
+            fullWidth  : true,
+            border     : true,
+            title      : title,
+            startRow   : startRow,
             borderInset: borderInset,
-            isDimmed: isDimmed)
+            isDimmed   : isDimmed)
         {
             UnderlayMenu = underlay,
             FooterText = footerText
@@ -799,28 +799,28 @@ internal static class Program
         var menuColors = _configuration.Configuration.MenuOptions;
         options.SetColor(
             selectedItemColor: ToAnsiColor(menuColors.SelectionColor, Foreground.Red, isDimmed),
-            defaultColor: ToAnsiColor(menuColors.TextColor, Foreground.White, isDimmed),
-            borderColor: ToAnsiColor(menuColors.BorderColor, Foreground.Blue, isDimmed),
-            titleColor: ToAnsiColor(menuColors.TitleColor, Foreground.Cyan, isDimmed));
+            defaultColor     : ToAnsiColor(menuColors.TextColor, Foreground.White, isDimmed),
+            borderColor      : ToAnsiColor(menuColors.BorderColor, Foreground.Blue, isDimmed),
+            titleColor       : ToAnsiColor(menuColors.TitleColor, Foreground.Cyan, isDimmed));
         options.SetSelectedItem(selectedItem);
         return options;
     }
 
     private static string ReadText(
         string prompt,
-        GridMenu? underlay = null,
-        int startRow = 0,
-        int borderInset = 0,
-        int padding = 1,
+        GridMenu? underlay    = null,
+        int       startRow    = 0,
+        int       borderInset = 0,
+        int       padding     = 1,
         Func<string, IReadOnlyList<TextInputCompletionOption>>? tabCompletionOptionsHandler = null)
     {
         var input = new TextInput(
             prompt,
-            padding: padding,
-            fullWidth: true,
-            border: true,
-            startRow: startRow,
-            borderInset: borderInset,
+            padding     : padding,
+            fullWidth   : true,
+            border      : true,
+            startRow    : startRow,
+            borderInset : borderInset,
             promptInline: true)
         {
             UnderlayMenu = underlay,
@@ -828,7 +828,7 @@ internal static class Program
         };
         input.SetColor(
             promptColor: ToAnsiColor(_configuration.Configuration.MenuOptions.TitleColor, Foreground.Cyan),
-            inputColor: ToAnsiColor(_configuration.Configuration.MenuOptions.TextColor, Foreground.White),
+            inputColor : ToAnsiColor(_configuration.Configuration.MenuOptions.TextColor, Foreground.White),
             borderColor: ToAnsiColor(_configuration.Configuration.MenuOptions.BorderColor, Foreground.Blue));
         return input.Run().ToString() ?? "";
     }
@@ -846,9 +846,9 @@ internal static class Program
         try
         {
             var intensity = dimmed ? 0.65 : 1.0;
-            var red = Convert.ToInt32(value.Substring(1, 2), 16);
-            var green = Convert.ToInt32(value.Substring(3, 2), 16);
-            var blue = Convert.ToInt32(value.Substring(5, 2), 16);
+            var red       = Convert.ToInt32(value.Substring(1, 2), 16);
+            var green     = Convert.ToInt32(value.Substring(3, 2), 16);
+            var blue      = Convert.ToInt32(value.Substring(5, 2), 16);
             return Foreground.RGB(
                 (int)Math.Round(red * intensity),
                 (int)Math.Round(green * intensity),

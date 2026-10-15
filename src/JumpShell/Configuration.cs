@@ -26,10 +26,10 @@ internal sealed class GlobalConfiguration
 internal sealed class MenuConfiguration
 {
     public int Columns { get; set; } = 6;
-    public string TitleColor { get; set; } = "#15dbad";
-    public string SelectionColor { get; set; } = "#ff0000";
-    public string BorderColor { get; set; } = "#054873";
-    public string TextColor { get; set; } = "#808080";
+    public string TitleColor { get; set; } = "#bb9af7";
+    public string SelectionColor { get; set; } = "#f7768e";
+    public string BorderColor { get; set; } = "#7aa2f7";
+    public string TextColor { get; set; } = "#7a8f75";
 }
 
 internal sealed class UserConfiguration
@@ -95,16 +95,16 @@ internal sealed class ConfigurationStore
         var configNode = Find(root, "configuration") as YamlMappingNode;
         if (configNode is not null)
         {
-            result.Configuration.UsePasswordState = ReadBool(configNode, "use_password_state");
-            result.Configuration.PasswordList = OptionalScalar(Find(configNode, "password_list"));
-            result.Configuration.GlobalSshKeypairId = OptionalScalar(Find(configNode, "global_ssh_keypair_id"));
-            result.Configuration.SeparateSshKeyPairs = ReadBool(configNode, "seperate_ssh_key_pairs") || ReadBool(configNode, "separate_ssh_key_pairs");
-            result.Configuration.WindowsConnectionMethod = ReadString(configNode, "windows_connection_method", "ssh-shell");
-            result.Configuration.MenuOptions.Columns = ReadInt(configNode, "menu_options", "columns", 6);
-            result.Configuration.MenuOptions.TitleColor = ReadString(configNode, "menu_options", "title_color", result.Configuration.MenuOptions.TitleColor);
+            result.Configuration.UsePasswordState           = ReadBool(configNode, "use_password_state");
+            result.Configuration.PasswordList               = OptionalScalar(Find(configNode, "password_list"));
+            result.Configuration.GlobalSshKeypairId         = OptionalScalar(Find(configNode, "global_ssh_keypair_id"));
+            result.Configuration.SeparateSshKeyPairs        = ReadBool(configNode, "seperate_ssh_key_pairs") || ReadBool(configNode, "separate_ssh_key_pairs");
+            result.Configuration.WindowsConnectionMethod    = ReadString(configNode, "windows_connection_method", "ssh-shell");
+            result.Configuration.MenuOptions.Columns        = ReadInt(configNode, "menu_options", "columns", 6);
+            result.Configuration.MenuOptions.TitleColor     = ReadString(configNode, "menu_options", "title_color", result.Configuration.MenuOptions.TitleColor);
             result.Configuration.MenuOptions.SelectionColor = ReadString(configNode, "menu_options", "selection_color", result.Configuration.MenuOptions.SelectionColor);
-            result.Configuration.MenuOptions.BorderColor = ReadString(configNode, "menu_options", "border_color", result.Configuration.MenuOptions.BorderColor);
-            result.Configuration.MenuOptions.TextColor = ReadString(configNode, "menu_options", "text_color", result.Configuration.MenuOptions.TextColor);
+            result.Configuration.MenuOptions.BorderColor    = ReadString(configNode, "menu_options", "border_color", result.Configuration.MenuOptions.BorderColor);
+            result.Configuration.MenuOptions.TextColor      = ReadString(configNode, "menu_options", "text_color", result.Configuration.MenuOptions.TextColor);
 
             var usernames = Find(configNode, "usernames") as YamlSequenceNode;
             if (usernames is not null)
@@ -124,7 +124,7 @@ internal sealed class ConfigurationStore
                         result.Configuration.Usernames.Add(username);
                         result.Configuration.Credentials.Add(new UserConfiguration
                         {
-                            Username = username,
+                            Username   = username,
                             PasswordId = OptionalScalar(Find(credential, "password_id"))
                         });
                     }
@@ -182,13 +182,13 @@ internal sealed class ConfigurationStore
 
         var host = new HostConfiguration
         {
-            OperatingSystem = ReadString(node, "operating_system", "Linux"),
-            DefaultUser = OptionalScalar(Find(node, "default_user")),
-            Alias = OptionalScalar(Find(node, "alias")),
-            SshKey = OptionalScalar(Find(node, "ssh_key")),
-            ConnectionMethod = OptionalScalar(Find(node, "connection_method")) ?? "SSH",
+            OperatingSystem         = ReadString(node, "operating_system", "Linux"),
+            DefaultUser             = OptionalScalar(Find(node, "default_user")),
+            Alias                   = OptionalScalar(Find(node, "alias")),
+            SshKey                  = OptionalScalar(Find(node, "ssh_key")),
+            ConnectionMethod        = OptionalScalar(Find(node, "connection_method")) ?? "SSH",
             WindowsConnectionMethod = OptionalScalar(Find(node, "windows_connection_method")),
-            PasswordId = OptionalScalar(Find(node, "password_id"))
+            PasswordId              = OptionalScalar(Find(node, "password_id"))
         };
 
         if (Find(node, "additional_users") is YamlSequenceNode additionalUsers)
