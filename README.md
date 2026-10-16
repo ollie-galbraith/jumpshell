@@ -44,30 +44,30 @@ Use the menu to add hosts and manage users, or edit the YAML directly. Host entr
 
 ```yaml
 configuration:
-	use_password_state: false
-	windows_connection_method: ssh-shell
-	usernames:
-		- admin
-	menu_options:
-		columns: 6
-		title_color: '#bb9af7'
-		selection_color: '#f7768e'
-		border_color: '#7aa2f7'
-		text_color: '#7a8f75'
+  use_password_state: false
+  windows_connection_method: ssh-shell
+  usernames:
+    - admin
+  menu_options:
+    columns: 6
+    title_color: '#bb9af7'
+    selection_color: '#f7768e'
+    border_color: '#7aa2f7'
+    text_color: '#7a8f75'
 connections:
-	my-linux-host:
-		operating_system: Linux
-		alias: 192.0.2.10
-		default_user: admin
-		ssh_key: ~/.ssh/id_ed25519_work
-		additional_users:
-			- backup
-		connection_method: SSH
-		terminal_color:
-			background: '#1e1e1e'
-	my-windows-host:
-		operating_system: Windows
-		windows_connection_method: powershell-remoting
+  my-linux-host:
+    operating_system: Linux
+    alias: 192.0.2.10
+    default_user: admin
+    ssh_key: ~/.ssh/id_ed25519_work
+    additional_users:
+      - backup
+    connection_method: SSH
+    terminal_color:
+      background: '#1e1e1e'
+  my-windows-host:
+    operating_system: Windows
+    windows_connection_method: powershell-remoting
 ```
 
 ### Global options
