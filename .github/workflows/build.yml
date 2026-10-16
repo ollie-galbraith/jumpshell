@@ -75,4 +75,4 @@ jobs:
           files: |-
             bin/**
           tag_name: v${{ steps.version.outputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.PUSH_TOKEN }}
