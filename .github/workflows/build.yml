@@ -1,0 +1,77 @@
+name: Build Jumpshell
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/JumpShell/**'
+      - '.github/workflows/build.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/JumpShell/**'
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    name: Build JumpShell
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Get version
+        id: version
+        run: echo "version=$(dotnet msbuild src/JumpShell/JumpShell.csproj -getProperty:Version)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify version is newer than latest release
+        if: github.event_name == 'push'
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          latest_tag=$(git tag --list 'v[0-9]*' --sort=-version:refname | head -n 1)
+          if [ -z "$latest_tag" ]; then
+            echo "No previous release tag found; allowing the first release."
+            exit 0
+          fi
+
+          latest_version=${latest_tag#v}
+          newest_version=$(printf '%s\n%s\n' "$latest_version" "$CURRENT_VERSION" | sort -V | tail -n 1)
+          if [ "$CURRENT_VERSION" = "$latest_version" ] || [ "$newest_version" != "$CURRENT_VERSION" ]; then
+            echo "Project version $CURRENT_VERSION must be newer than the latest release $latest_tag."
+            exit 1
+          fi
+
+          echo "Project version $CURRENT_VERSION is newer than the latest release $latest_tag."
+
+      - name: Clear NuGet cache
+        run: dotnet nuget locals all --clear
+
+      - name: Restore dependencies
+        run: dotnet restore src/JumpShell/JumpShell.csproj
+
+      - name: Build
+        run: |
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r osx-arm64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r osx-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+          dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true
+
+      - name: Create Release
+        if: github.event_name == 'push'
+        id: use-go-action
+        uses: akkuman/gitea-release-action@v1
+        with:
+          files: |-
+            bin/**
+          tag_name: v${{ steps.version.outputs.version }}
