@@ -35,16 +35,6 @@ chmod +x jumpshell-linux-x64
 
 Pass `--version` to the executable to print its version without opening the menu. OpenSSH (`ssh`) must be available on your `PATH`. VS Code connections also need the `code` CLI and Remote SSH extension. The Windows PowerShell-remoting option requires PowerShell 7 locally and SSH remoting configured on the Windows host. The default Windows method starts `pwsh` on the host over SSH, so the host needs OpenSSH Server and PowerShell installed.
 
-## Build
-
-Install the .NET 10 SDK, then publish a self-contained single-file executable. For example, to build for Linux x64:
-
-```sh
-dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
-```
-
-The build workflow publishes `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `win-x64` releases. Local publish output is copied into the repository's `bin/` directory for release assembly; downloadable executables are provided on the [GitHub Releases page](https://github.com/ollie-galbraith/jumpshell/releases).
-
 ## Configuration
 
 On first run, JumpShell creates `JumpShell/config.yaml` in the platform's user configuration directory:
@@ -122,3 +112,13 @@ The older `configuration.credentials` entries are read as global usernames, and 
 Press `a` to add a host, `c` to open the selected host's options, `r` or Delete to remove it, `?` for help, and Enter to connect. The host options menu also manages aliases, SSH keys, users, defaults, and saved SSH host keys. Press Escape to exit.
 
 See the [build and release guide](src/JumpShell/README.md) for platform-specific publish commands and implementation notes.
+
+## Build
+
+Install the .NET 10 SDK, then publish a self-contained single-file executable. For example, to build for Linux x64:
+
+```sh
+dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
+```
+
+The build workflow publishes `linux-x64`, `linux-arm64`, `osx-x64`, `osx-arm64`, and `win-x64` releases. Local publish output is copied into the repository's `bin/` directory for release assembly; downloadable executables are provided on the [GitHub Releases page](https://github.com/ollie-galbraith/jumpshell/releases).
