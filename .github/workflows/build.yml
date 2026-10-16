@@ -70,7 +70,7 @@ jobs:
       - name: Create Release
         if: github.event_name == 'push'
         id: use-go-action
-        uses: akkuman/gitea-release-action@v1
+        uses: softprops/action-gh-release@v3
         with:
           files: |-
             bin/**
