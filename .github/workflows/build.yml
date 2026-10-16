@@ -18,9 +18,13 @@ jobs:
   build:
     name: Build JumpShell
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      arm64_sha: ${{ steps.checksums.outputs.arm64_sha }}
+      x64_sha: ${{ steps.checksums.outputs.x64_sha }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -67,6 +71,12 @@ jobs:
           dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true
           dotnet publish src/JumpShell/JumpShell.csproj -c Release -r linux-arm64 --self-contained true -p:PublishSingleFile=true
 
+      - name: Calculate macOS SHA-256
+        id: checksums
+        run: |
+          echo "arm64_sha=$(sha256sum bin/jumpshell-osx-arm64 | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          echo "x64_sha=$(sha256sum bin/jumpshell-osx-x64 | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         if: github.event_name == 'push'
         id: use-go-action
@@ -76,3 +86,49 @@ jobs:
             bin/**
           tag_name: v${{ steps.version.outputs.version }}
           token: ${{ secrets.PUSH_TOKEN }}
+
+  update-homebrew:
+    name: Update Homebrew formula
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Homebrew tap
+        uses: actions/checkout@v6
+        with:
+          repository: ollie-galbraith/homebrew-jumpshell
+          token: ${{ secrets.PUSH_TOKEN }}
+          path: homebrew-jumpshell
+
+      - name: Update formula
+        working-directory: homebrew-jumpshell
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          ARM64_SHA: ${{ needs.build.outputs.arm64_sha }}
+          X64_SHA: ${{ needs.build.outputs.x64_sha }}
+        run: |
+          ruby <<'RUBY'
+          path = "Formula/jumpshell.rb"
+          formula = File.read(path)
+
+          raise "Could not update formula version" unless formula.sub!(/^  version "[^"]+"$/, "  version \"#{ENV.fetch('VERSION')}\"")
+          raise "Could not update arm64 checksum" unless formula.sub!(/(url ".*jumpshell-osx-arm64"\n\s+sha256 ")[0-9a-f]+("\n)/) { "#{$1}#{ENV.fetch('ARM64_SHA')}#{$2}" }
+          raise "Could not update x64 checksum" unless formula.sub!(/(url ".*jumpshell-osx-x64"\n\s+sha256 ")[0-9a-f]+("\n)/) { "#{$1}#{ENV.fetch('X64_SHA')}#{$2}" }
+
+          File.write(path, formula)
+          RUBY
+
+      - name: Commit and push formula update
+        working-directory: homebrew-jumpshell
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/jumpshell.rb
+          if git diff --cached --quiet; then
+            echo "Homebrew formula is already up to date."
+            exit 0
+          fi
+          git commit -m "Update jumpshell to ${VERSION}"
+          git push
