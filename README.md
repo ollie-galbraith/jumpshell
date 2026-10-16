@@ -11,6 +11,19 @@ Source code and downloads: [GitHub repository](https://github.com/ollie-galbrait
 - Saves host aliases, usernames, default users, and optional SSH key paths in a YAML configuration file.
 - Remembers host-specific terminal background colors for SSH sessions.
 
+## Installation
+
+Currently only Homebrew is setup to host JumpShell. Linux and Windows versions will have to download version from [Releases](https://github.com/ollie-galbraith/jumpshell/releases)
+
+### Homebrew
+
+```sh
+brew tap ollie-galbraith/jumpshell
+brew trust ollie-galbraith/jumpshell
+
+brew install jumpshell
+```
+
 ## Run
 
 Download the executable for your operating system and CPU architecture from the [GitHub Releases page](https://github.com/ollie-galbraith/jumpshell/releases). For example, after downloading the Linux x64 release:
